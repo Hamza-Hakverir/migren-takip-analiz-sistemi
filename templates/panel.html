@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MigrenAnaliz Paneli</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        /* --- GENEL AYARLAR --- */
+        body { background-color: #121212; color: #e0e0e0; font-family: 'Segoe UI', sans-serif; margin: 0; }
+
+        /* NAVBAR */
+        .navbar {
+            background-color: #1e1e1e; padding: 15px 40px; display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid #333; box-shadow: 0 4px 10px rgba(0,0,0,0.5); position: sticky; top: 0; z-index: 1000;
+        }
+        .nav-links a { color: #ccc; text-decoration: none; margin-left: 20px; font-weight: 500; padding: 8px 15px; border-radius: 20px; transition: 0.3s; }
+        .nav-links a:hover { background: #333; color: white; }
+        .btn-logout { color: #cf6679 !important; border: 1px solid #cf6679; }
+        .btn-logout:hover { background: #cf6679 !important; color: white !important; }
+
+        /* LAYOUT */
+        .container { max-width: 1200px; margin: 40px auto; padding: 20px; display: grid; grid-template-columns: 2fr 1fr; gap: 30px; }
+        .left-panel, .right-panel { display: flex; flex-direction: column; gap: 30px; }
+
+        /* KARTLAR */
+        .card { background: #1e1e1e; border-radius: 15px; padding: 20px; border: 1px solid #333; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        .card-header { font-size: 1.2em; color: #03dac6; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+
+        /* YENİ GRAFİK RAPOR BUTONU (SAĞ PANEL İÇİN) */
+        .btn-graphic-report {
+            display: flex; align-items: center; justify-content: space-between;
+            background: linear-gradient(45deg, #2c3e50, #3498db);
+            padding: 25px; border-radius: 15px; text-decoration: none; color: white;
+            border: 1px solid #3498db; transition: transform 0.3s, box-shadow 0.3s;
+            overflow: hidden; position: relative;
+        }
+        .btn-graphic-report:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(52, 152, 219, 0.4); }
+        .btn-graphic-report .btn-content h4 { margin: 0; font-size: 1.2em; font-weight: bold; }
+        .btn-graphic-report .btn-content p { margin: 5px 0 0; font-size: 0.9em; color: #ccc; }
+        .btn-graphic-report i { font-size: 3em; opacity: 0.7; }
+
+        /* BUTONLAR (Sol Panel) */
+        .btn-atak { 
+            display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+            min-width: 250px; background: linear-gradient(135deg, #6200ea, #3700b3);
+            color: white; padding: 15px 25px; text-decoration: none; border-radius: 12px; 
+            font-size: 1.1em; font-weight: bold; box-shadow: 0 5px 15px rgba(98, 0, 234, 0.4);
+            transition: transform 0.3s; width: auto;
+        }
+        .btn-atak:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(98, 0, 234, 0.6); }
+
+        .btn-tumunu-gor { background: #333; color: white; padding: 8px 15px; border-radius: 20px; text-decoration: none; font-size: 0.9em; border: 1px solid #555; }
+        .btn-tumunu-gor:hover { background: #555; }
+
+        /* TABLO */
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; color: #888; padding: 12px; border-bottom: 1px solid #444; font-size: 0.9em; }
+        td { padding: 15px 12px; border-bottom: 1px solid #333; color: #e0e0e0; }
+        .badge { padding: 5px 10px; border-radius: 8px; font-size: 0.85em; font-weight: bold; color: #121212; }
+        .bg-red { background-color: #ff7675; } .bg-orange { background-color: #fdcb6e; } .bg-green { background-color: #55efc4; }
+
+        /* TAHMİN ALANI GRID DÜZENİ */
+        #tahmin-alani { display: block; margin-top: 40px; padding-top: 30px; border-top: 2px dashed #333; grid-column: 1 / -1; }
+        
+        .tahmin-grid { 
+            display: grid; 
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 25px; 
+            align-items: stretch;
+        }
+
+        .tahmin-card { 
+            background: #252526; padding: 25px; border-radius: 15px; border: 1px solid #444; position: relative;
+            display: flex; flex-direction: column;
+        }
+        
+        .tahmin-title { color: #bb86fc; margin-bottom: 15px; font-weight: bold; font-size: 1.1em; }
+
+        /* SEÇİM BUTONLARI */
+        .btn-select-grid { 
+            display: flex; flex-wrap: wrap; gap: 10px; 
+            align-content: flex-start; 
+            max-height: 220px; overflow-y: auto; 
+        }
+        .btn-select-grid::-webkit-scrollbar { width: 6px; }
+        .btn-select-grid::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
+
+        .btn-select { 
+            background: #333; color: #ccc; border: 1px solid #444; padding: 8px 12px; 
+            border-radius: 20px; cursor: pointer; transition: 0.2s; font-size: 0.85em; flex-grow: 1; text-align: center;
+        }
+        .btn-select:hover { border-color: #81c784; background: #3a3a3a; }
+        .btn-select.selected { background: #00b894; color: black; border-color: #00b894; font-weight: bold; }
+
+        /* SU SÜRAHİSİ */
+        .jug-container {
+            width: 90px; height: 160px; margin: 0 auto; position: relative;
+            background: rgba(255, 255, 255, 0.05); border: 3px solid #aaa;
+            border-radius: 10px 10px 40px 40px; overflow: hidden;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+        }
+        .water-fill {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 0%;
+            background: linear-gradient(to top, #0984e3, #74b9ff); transition: height 0.2s linear; opacity: 0.9;
+        }
+        .measure-line { position: absolute; right: 0; width: 15px; height: 1px; background: rgba(255,255,255,0.5); z-index: 10; }
+
+        input[type="range"] { width: 100%; accent-color: #bb86fc; cursor: pointer; margin-top: 15px; }
+
+        /* ANALİZ BUTONU */
+        .btn-analiz-full {
+            width: 100%; height: 100%; padding: 0;
+            background: linear-gradient(135deg, #00b894, #00cec9); color: black;
+            border: none; border-radius: 15px; font-size: 1.2em; font-weight: bold; 
+            cursor: pointer; box-shadow: 0 5px 20px rgba(0, 184, 148, 0.3);
+            text-transform: uppercase; letter-spacing: 1px; transition: transform 0.2s;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+        }
+        .btn-analiz-full:hover { filter: brightness(1.1); transform: scale(1.02); }
+
+        /* GRAFİK MODAL */
+        .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.9); justify-content: center; align-items: center; }
+        .modal-content { background-color: #1e1e1e; margin: auto; padding: 20px; border: 1px solid #888; width: 90%; max-width: 1000px; height: 80%; border-radius: 15px; }
+        .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .zoom-icon { cursor: pointer; float: right; color: #bb86fc; font-size: 0.9em; }
+
+        /* Mobil */
+        @media (max-width: 900px) {
+            .tahmin-grid { grid-template-columns: 1fr; }
+            .container { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div style="font-size: 1.5em; color: #bb86fc; font-weight: bold;">⚡ MigrenAnaliz</div>
+        <div class="nav-links">
+            <span>Hoşgeldin, <strong style="color: #bb86fc;">{{ isim }}</strong></span>
+            <a href="{{ url_for('atak_ekle') }}">Atak Ekle</a>
+            <a href="{{ url_for('analiz') }}">Raporlarım</a>
+            <a href="{{ url_for('cikis') }}" class="btn-logout">Çıkış Yap</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        
+        <div class="left-panel">
+            <a href="{{ url_for('atak_ekle') }}" class="btn-atak">
+                <i class="fas fa-bolt"></i> YENİ MİGREN ATAĞI GİR
+            </a>
+
+            <div class="card">
+                <div class="card-header">
+                    <span>📋 Son Atak Kayıtları</span>
+                    <a href="{{ url_for('tum_ataklar') }}" class="btn-tumunu-gor">Tümünü Gör →</a>
+                </div>
+                {% if ataklar %}
+                <table>
+                    <thead><tr><th>Tarih</th><th>Şiddet</th><th>Tetikleyici</th></tr></thead>
+                    <tbody>
+                        {% for atak in ataklar %}
+                        <tr>
+                            <td>{{ atak['temiz_tarih'] }}</td>
+                            <td>
+                                {% if atak['siddet'] >= 8 %}<span class="badge bg-red">{{ atak['siddet'] }}/10</span>
+                                {% elif atak['siddet'] >= 5 %}<span class="badge bg-orange">{{ atak['siddet'] }}/10</span>
+                                {% else %}<span class="badge bg-green">{{ atak['siddet'] }}/10</span>{% endif %}
+                            </td>
+                            <td style="color: #aaa; font-size: 0.9em;">{{ atak['tetikleyiciler'][:20] + '...' if atak['tetikleyiciler'] else '-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                    <div style="text-align: center; padding: 20px; color: #666;">Henüz hiç atak kaydı girmediniz.</div>
+                {% endif %}
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span>📈 Ağrı Şiddeti Grafiği</span>
+                    <span class="zoom-icon" onclick="openModal()"><i class="fas fa-expand"></i> Büyüt</span>
+                </div>
+                <div style="height: 300px; cursor: pointer;" onclick="openModal()">
+                    <canvas id="kucukGrafik"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div class="card" style="background: linear-gradient(135deg, #2d3436, #1e1e1e); text-align: center; min-height: 160px; display: flex; flex-direction: column; justify-content: center;">
+                <div style="color: #03dac6; font-weight: bold; margin-bottom: 10px; font-size: 1.1em;">💡 GÜNÜN MİGREN BİLGİSİ</div>
+                <div id="bilgi-metni" style="font-style: italic; margin-bottom: 15px; transition: opacity 0.5s;">Yükleniyor...</div>
+                <div id="bilgi-noktalari" style="display: flex; justify-content: center; gap: 8px;"></div>
+            </div>
+
+            <div class="card" style="border: 1px solid #bb86fc; text-align: center;">
+                <i class="fas fa-brain" style="font-size: 3.5em; color: #bb86fc; margin-bottom: 15px;"></i>
+                <h3>Migren Gelecek mi?</h3>
+                <p style="color: #888; font-size: 0.9em;">Aşağıdaki panelden anlık risk analizi yap.</p>
+                <button style="background:transparent; border:2px solid #bb86fc; color:#bb86fc; padding:10px 20px; border-radius:20px; cursor:pointer;" onclick="tahminAc()">Analize Git ▼</button>
+            </div>
+
+            <a href="{{ url_for('analiz') }}" class="btn-graphic-report">
+                <div class="btn-content">
+                    <h4>📊 Detaylı Raporlar</h4>
+                    <p>Grafiklerle analizlerini incelemek için tıkla.</p>
+                </div>
+                <i class="fas fa-chart-line"></i>
+            </a>
+        </div>
+
+        <div id="tahmin-alani">
+            <h2 style="text-align: center; color: #03dac6; margin-bottom: 30px;">
+                <i class="fas fa-microchip"></i> Anlık Durum Analizi
+            </h2>
+            
+            <form action="{{ url_for('tahmin_yap') }}" method="POST">
+                
+                <input type="hidden" name="uyku_suresi" id="input-uyku" value="420">
+                <input type="hidden" name="stres_seviyesi" id="input-stres" value="0">
+                <input type="hidden" name="su_miktari" id="input-su" value="0">
+                <div id="hidden-inputs-container"></div>
+
+                <div class="tahmin-grid">
+                    
+                    <div class="tahmin-card">
+                        <div class="tahmin-title">😔 Nasıl Hissediyorsun?</div>
+                        <div class="btn-select-grid">
+                            <div class="btn-select" onclick="toggleSelection(this, 'hisler[]', 'Ensem Sert')">Ensem Sert</div>
+                            <div class="btn-select" onclick="toggleSelection(this, 'hisler[]', 'Gözüm Kararıyor')">Gözüm Kararıyor</div>
+                            <div class="btn-select" onclick="toggleSelection(this, 'hisler[]', 'Çok Esniyorum')">Çok Esniyorum</div>
+                            <div class="btn-select" onclick="toggleSelection(this, 'hisler[]', 'Mide Bulantısı')">Mide Bulantısı</div>
+                            <div class="btn-select" onclick="toggleSelection(this, 'hisler[]', 'Işık Rahatsız Ediyor')">Işık Rahatsız Ediyor</div>
+                            <div class="btn-select" onclick="toggleSelection(this, 'hisler[]', 'Sesler Çok Yüksek')">Sesler Çok Yüksek</div>
+                            <div class="btn-select" onclick="toggleSelection(this, 'hisler[]', 'Garip Kokular')">Garip Kokular</div>
+                            <div class="btn-select" onclick="toggleSelection(this, 'hisler[]', 'Odaklanamıyorum')">Odaklanamıyorum</div>
+                            <div class="btn-select" onclick="toggleSelection(this, 'hisler[]', 'Baş Dönmesi')">Baş Dönmesi</div>
+                            <div class="btn-select" onclick="toggleSelection(this, 'hisler[]', 'Soğuk Terleme')">Soğuk Terleme</div>
+                            <div class="btn-select" onclick="toggleSelection(this, 'hisler[]', 'Sinirliyim')">Sinirliyim</div>
+                            <div class="btn-select" onclick="toggleSelection(this, 'hisler[]', 'Halsizim')">Halsizim</div>
+                        </div>
+                    </div>
+
+                    <div class="tahmin-card">
+                        <div class="tahmin-title">😴 Dün gece ne kadar uyudun?</div>
+                        <div style="font-size: 1.8em; text-align: center; margin: 15px 0; color: #bb86fc;">
+                            <span id="uyku-saat">7</span> sa <span id="uyku-dk">0</span> dk
+                        </div>
+                        <input type="range" min="0" max="720" step="15" value="420" oninput="updateUyku(this.value)">
+                    </div>
+
+                    <div class="tahmin-card">
+                        <div class="tahmin-title">🤯 Stres Seviyen: <span id="stres-text" style="color: #00b894;">Rahat</span></div>
+                        <div style="font-size: 2.5em; text-align: center; font-weight: bold; margin: 10px 0;" id="stres-num">0</div>
+                        <input type="range" min="0" max="10" value="0" oninput="updateStres(this.value)" style="accent-color: #00b894;" id="stres-slider">
+                        <div class="stres-labels" style="display:flex; justify-content:space-between; color:#888; font-size:0.8em; margin-top:5px;">
+                            <span>0 (Rahat)</span><span>5 (Orta)</span><span>10 (Çok Stresli)</span>
+                        </div>
+                    </div>
+
+                    <div class="tahmin-card">
+                        <div class="tahmin-title">💧 Su Tüketimi (0 - 5L)</div>
+                        <div class="jug-container">
+                            <div class="water-fill" id="water-fill"></div>
+                            <div class="measure-line" style="bottom: 20%;"></div>
+                            <div class="measure-line" style="bottom: 40%;"></div>
+                            <div class="measure-line" style="bottom: 60%;"></div>
+                            <div class="measure-line" style="bottom: 80%;"></div>
+                        </div>
+                        <div style="text-align: center; font-size: 1.5em; font-weight: bold; margin: 15px 0;">
+                            <span id="su-text">0.0</span> Litre
+                        </div>
+                        <input type="range" min="0" max="5" step="0.1" value="0" oninput="updateSuSlider(this.value)" style="accent-color: #0984e3;">
+                    </div>
+
+                    <div class="tahmin-card">
+                        <div class="tahmin-title">🍔 Yemekler</div>
+                        <div class="btn-select-grid">
+                            {% for yemek in yemek_listesi %}
+                                <div class="btn-select" onclick="toggleSelection(this, 'yenilenler[]', '{{ yemek }}')">{{ yemek }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="tahmin-card" style="padding: 0; overflow: hidden;">
+                        <button type="submit" class="btn-analiz-full">
+                            <i class="fas fa-calculator" style="font-size: 2.5em;"></i>
+                            ANALİZ ET VE TAHMİN YAP
+                        </button>
+                    </div>
+
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if session.get('tahmin_sonucu') %}
+    <div id="sonucModal" class="modal" style="display: flex;">
+        <div class="modal-content" style="text-align: center; max-width: 500px; height: auto;">
+            <span class="close" onclick="document.getElementById('sonucModal').style.display='none'">&times;</span>
+            <h2 style="color: #bb86fc;">🧠 Yapay Zeka Analizi</h2>
+            <div style="margin: 20px 0; padding: 20px; border-radius: 15px; background: #2d3436;">
+                <h1 style="font-size: 3em; margin: 0;">%{{ session['tahmin_sonucu']['puan'] }}</h1>
+                <h3 style="margin-top: 10px;">{{ session['tahmin_sonucu']['durum'] }}</h3>
+            </div>
+            <div style="text-align: left; background: #1e1e1e; padding: 15px; border-radius: 10px;">
+                <h4 style="color: #03dac6; border-bottom: 1px solid #444; padding-bottom: 5px;">Risk Nedenleri:</h4>
+                <ul style="color: #ccc; padding-left: 20px;">
+                    {% for neden in session['tahmin_sonucu']['nedenler'] %}
+                        <li style="margin-bottom: 5px;">{{ neden }}</li>
+                    {% endfor %}
+                    {% if not session['tahmin_sonucu']['nedenler'] %}
+                        <li>Harika! Şu an belirgin bir risk faktörü görünmüyor.</li>
+                    {% endif %}
+                </ul>
+            </div>
+            <button class="btn-analiz-full" onclick="document.getElementById('sonucModal').style.display='none'" style="margin-top: 20px; height: 50px; font-size: 1em;">Anlaşıldı</button>
+        </div>
+    </div>
+    {% set _ = session.pop('tahmin_sonucu', None) %}
+    {% endif %}
+
+    <div id="grafikModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2 style="text-align:center; color:#bb86fc;">Detaylı Atak Grafiği</h2>
+            <div style="height: 90%; width: 100%;">
+                <canvas id="buyukGrafikCanvas"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- GRAFİK ---
+        const grafikTarihleri = {{ grafik_tarihleri | safe }};
+        const grafikSiddetleri = {{ grafik_siddetleri | safe }};
+        const ctxSmall = document.getElementById('kucukGrafik').getContext('2d');
+        
+        new Chart(ctxSmall, {
+            type: 'line',
+            data: {
+                labels: grafikTarihleri,
+                datasets: [{
+                    label: 'Ağrı Şiddeti', data: grafikSiddetleri,
+                    borderColor: '#bb86fc', backgroundColor: 'rgba(187, 134, 252, 0.2)',
+                    fill: true, tension: 0.3, pointRadius: 4
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: { y: { min: 0, max: 10, grid: { color: '#333' } }, x: { grid: { color: '#333' } } },
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        // --- BİLGİ KÖŞESİ (GÜNCELLENDİ) ---
+        // Backend'den gelen listeyi kullanıyoruz. Eğer boş gelirse varsayılanları kullan.
+        const migrenBilgileri = {{ bilgi_listesi | tojson }};
+        
+        let infoIdx = 0; 
+        const infoTxt = document.getElementById('bilgi-metni');
+        const dotsBox = document.getElementById('bilgi-noktalari');
+        let slideInterval;
+
+        function initInfo() {
+            // Noktaları oluştur
+            migrenBilgileri.forEach((_, i) => {
+                let d = document.createElement('div');
+                d.style.cssText = `width:10px; height:10px; border-radius:50%; background:${i===0?'#03dac6':'#555'}; transition:0.3s; cursor:pointer;`;
+                d.onclick = () => showInfo(i); // Tıklama özelliği eklendi
+                dotsBox.appendChild(d);
+            });
+            showInfo(0);
+            startSlide();
+        }
+
+        function showInfo(index) {
+            infoIdx = index;
+            infoTxt.style.opacity = 0;
+            setTimeout(() => {
+                infoTxt.innerText = migrenBilgileri[infoIdx];
+                infoTxt.style.opacity = 1;
+                Array.from(dotsBox.children).forEach((n, i) => {
+                    n.style.background = i === infoIdx ? "#03dac6" : "#555";
+                });
+            }, 300);
+        }
+
+        function startSlide() {
+            if(slideInterval) clearInterval(slideInterval);
+            slideInterval = setInterval(() => {
+                let nextIdx = (infoIdx + 1) % migrenBilgileri.length;
+                showInfo(nextIdx);
+            }, 7000);
+        }
+
+        initInfo(); // Başlat
+
+        // --- TAHMİN FONKSİYONLARI ---
+        function tahminAc() { document.getElementById('tahmin-alani').scrollIntoView({ behavior: 'smooth' }); }
+
+        function toggleSelection(el, inputName, value) {
+            el.classList.toggle('selected');
+            const container = document.getElementById('hidden-inputs-container');
+            
+            if (el.classList.contains('selected')) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = inputName;
+                input.value = value;
+                input.id = 'inp-' + value.replace(/\s/g, ''); 
+                container.appendChild(input);
+            } else {
+                const existing = document.getElementById('inp-' + value.replace(/\s/g, ''));
+                if (existing) existing.remove();
+            }
+        }
+
+        function updateUyku(val) {
+            let dk = parseInt(val);
+            document.getElementById('uyku-saat').innerText = Math.floor(dk/60);
+            document.getElementById('uyku-dk').innerText = dk%60;
+            document.getElementById('input-uyku').value = val;
+        }
+
+        function updateStres(val) {
+            document.getElementById('stres-num').innerText = val;
+            document.getElementById('input-stres').value = val;
+            let el = document.getElementById('stres-text');
+            let sl = document.getElementById('stres-slider');
+            let col = val==0?"#00b894":val<=3?"#55efc4":val<=6?"#fdcb6e":val<=8?"#e17055":"#d63031";
+            el.style.color = col; sl.style.accentColor = col;
+            el.innerText = val==0?"Rahat":val==10?"Çok Stresli":"Seviye "+val;
+        }
+
+        function updateSuSlider(val) {
+            document.getElementById('su-text').innerText = parseFloat(val).toFixed(1);
+            document.getElementById('water-fill').style.height = (val/5)*100 + "%";
+            document.getElementById('input-su').value = val;
+        }
+        
+        // Modal
+        let bigChart = null;
+        function openModal() {
+            document.getElementById('grafikModal').style.display = "flex";
+            if(bigChart) bigChart.destroy();
+            const ctxBig = document.getElementById('buyukGrafikCanvas').getContext('2d');
+            bigChart = new Chart(ctxBig, {
+                type: 'line',
+                data: {
+                    labels: grafikTarihleri,
+                    datasets: [{
+                        label: 'Ağrı Şiddeti', data: grafikSiddetleri,
+                        borderColor: '#bb86fc', backgroundColor: 'rgba(187, 134, 252, 0.2)',
+                        fill: true, tension: 0.3, pointRadius: 6
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+        function closeModal() { document.getElementById('grafikModal').style.display = "none"; }
+    </script>
+</body>
+</html>

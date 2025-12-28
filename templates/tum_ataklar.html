@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tüm Atak Geçmişi</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* --- GENEL AYARLAR --- */
+        body { 
+            background-color: #121212; color: #e0e0e0; 
+            font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; 
+        }
+
+        .container { max-width: 1400px; margin: 0 auto; }
+
+        /* HEADER & NAV */
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #333;
+        }
+        h2 { margin: 0; color: #bb86fc; display: flex; align-items: center; gap: 10px; }
+        
+        .btn-back { 
+            background: #333; color: white; text-decoration: none; 
+            padding: 10px 20px; border-radius: 20px; font-weight: bold; transition: 0.3s; 
+            border: 1px solid #555;
+        }
+        .btn-back:hover { background: #bb86fc; color: black; border-color: #bb86fc; }
+
+        /* TABLO TASARIMI */
+        .table-wrapper {
+            background: #1e1e1e; border-radius: 15px; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3); 
+            border: 1px solid #333;
+            overflow-x: auto; /* Mobilde yana kaydırma */
+        }
+
+        table { width: 100%; border-collapse: collapse; min-width: 1000px; }
+        
+        th { 
+            background: #252526; color: #03dac6; text-align: left; 
+            padding: 18px 15px; border-bottom: 2px solid #444; 
+            font-size: 0.95em; text-transform: uppercase; letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+        
+        td { 
+            padding: 15px; border-bottom: 1px solid #333; 
+            color: #ddd; vertical-align: middle; font-size: 0.9em;
+        }
+        
+        tr:last-child td { border-bottom: none; }
+        tr:hover { background-color: #2d2d2d; }
+
+        /* RENKLENDİRMELER VE ROZETLER */
+        .badge { 
+            padding: 5px 10px; border-radius: 6px; font-weight: bold; 
+            font-size: 0.85em; display: inline-block; min-width: 30px; text-align: center;
+        }
+        .siddet-dusuk { background: rgba(85, 239, 196, 0.2); color: #55efc4; border: 1px solid #55efc4; }
+        .siddet-orta { background: rgba(253, 203, 110, 0.2); color: #fdcb6e; border: 1px solid #fdcb6e; }
+        .siddet-yuksek { background: rgba(255, 118, 117, 0.2); color: #ff7675; border: 1px solid #ff7675; }
+
+        .text-muted { color: #666; font-style: italic; }
+        .tag { background: #333; padding: 2px 6px; border-radius: 4px; font-size: 0.85em; margin-right: 3px; display: inline-block; margin-bottom: 2px; border: 1px solid #444;}
+        
+        .agri-tipi-badge { color: #a29bfe; font-weight: bold; }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <div class="header">
+            <h2><i class="fas fa-folder-open"></i> Tüm Migren Atak Geçmişi</h2>
+            <a href="{{ url_for('panel') }}" class="btn-back"><i class="fas fa-arrow-left"></i> Panele Dön</a>
+        </div>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tarih</th>
+                        <th>Süre</th>
+                        <th>Şiddet</th>
+                        <th>Ağrı Tipi</th> <th>Bölge</th>
+                        <th>Semptomlar</th>
+                        <th>Tetikleyiciler</th>
+                        <th>İlaçlar</th>
+                        <th>Rahatlama</th>
+                        <th>Notlar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for atak in ataklar %}
+                    <tr>
+                        <td style="font-weight: 500; color: #fff;">{{ atak['temiz_tarih'] }}</td>
+                        
+                        <td>{{ atak['sure_dk'] }} dk</td>
+                        
+                        <td>
+                            {% if atak['siddet'] >= 8 %}
+                                <span class="badge siddet-yuksek">{{ atak['siddet'] }}</span>
+                            {% elif atak['siddet'] >= 5 %}
+                                <span class="badge siddet-orta">{{ atak['siddet'] }}</span>
+                            {% else %}
+                                <span class="badge siddet-dusuk">{{ atak['siddet'] }}</span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if atak['agri_tipleri'] %}
+                                <span class="agri-tipi-badge">{{ atak['agri_tipleri'] }}</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if atak['agri_konumu'] %}
+                                {{ atak['agri_konumu'] }}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+
+                        <td style="max-width: 200px;">
+                            {% if atak['semptomlar'] %}
+                                {% for s in atak['semptomlar'].split(',') %}
+                                    <span class="tag">{{ s.strip() }}</span>
+                                {% endfor %}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+
+                        <td style="max-width: 200px;">
+                            {% if atak['tetikleyiciler'] %}
+                                {% for t in atak['tetikleyiciler'].split(',') %}
+                                    <span class="tag" style="border-color:#555;">{{ t.strip() }}</span>
+                                {% endfor %}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if atak['ilaclar'] %}
+                                {{ atak['ilaclar'] }}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if atak['rahatlama_yontemleri'] %}
+                                {{ atak['rahatlama_yontemleri'] }}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+
+                        <td style="font-size: 0.85em; color: #bbb; max-width: 150px;">
+                            {% if atak['notlar'] %}
+                                <i>"{{ atak['notlar'] }}"</i>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="10" style="text-align: center; padding: 40px; color: #666;">
+                            Henüz kayıtlı bir atak bulunmuyor.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+</body>
+</html>

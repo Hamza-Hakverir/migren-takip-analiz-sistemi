@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yeni Atak Kaydı</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* --- GENEL AYARLAR --- */
+        body { 
+            background-color: #1a1a2e; color: white; 
+            font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0;
+            display: flex; justify-content: center; align-items: center; 
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 95%; max-width: 1100px; height: 90vh;
+            background: #16213e; border-radius: 20px; 
+            box-shadow: 0 0 40px rgba(0,0,0,0.6);
+            overflow: hidden; position: relative;
+            display: flex; flex-direction: column;
+        }
+
+        /* --- BAŞLIK --- */
+        .wizard-header {
+            padding: 20px; background: #0f1526; border-bottom: 1px solid #333;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .step-title { color: #bb86fc; font-weight: bold; font-size: 1.2em; }
+        .step-count { color: #888; font-size: 0.9em; }
+
+        /* --- ADIM STİLLERİ (ORTAK) --- */
+        .step-content {
+            flex-grow: 1; display: none; /* Başta gizli */
+            overflow-y: auto; padding: 20px;
+        }
+        
+        /* ADIM 1: TARİH */
+        #adim-1 { flex-direction: column; justify-content: center; align-items: center; text-align: center; display: flex; }
+        .date-card { background: #1f2a48; padding: 40px; border-radius: 20px; width: 100%; max-width: 500px; border: 1px solid #333; }
+        input[type="datetime-local"] { width: 100%; padding: 15px; margin-bottom: 20px; background: #0f3460; border: 1px solid #444; color: white; border-radius: 10px; font-size: 1.1em; }
+
+        /* ADIM 2: AĞRI/KONUM */
+        #adim-2 { grid-template-columns: 1fr 1fr; overflow: hidden; } /* JS ile grid yapılacak */
+        .left-panel { padding: 20px; overflow-y: auto; background: #1a1a2e; border-right: 1px solid #333; }
+        .right-panel { background: #0f1526; padding: 20px; display: flex; flex-direction: column; align-items: center; overflow-y: auto;}
+        
+        .pain-list { display: flex; flex-direction: column; gap: 5px; margin-top: 10px; }
+        .pain-item { display: flex; align-items: center; background: #1f2a48; border-radius: 8px; cursor: pointer; height: 45px; transition: 0.2s; }
+        .pain-item:hover { background: #2a3b5e; }
+        .pain-item.selected { border: 2px solid white; transform: scale(1.02); }
+        .pain-color { width: 45px; height: 100%; display: flex; justify-content: center; align-items: center; font-weight: bold; }
+        .pain-desc { padding-left: 15px; font-weight: bold; font-size: 0.9em; color: #ccc; }
+        
+        .c-10 { background: #e74c3c; } .c-9 { background: #e67e22; } .c-8 { background: #f39c12; }
+        .c-7 { background: #f1c40f; } .c-6 { background: #d35400; } .c-5 { background: #e67e22; }
+        .c-4 { background: #9b59b6; } .c-3 { background: #8e44ad; } .c-2 { background: #2ecc71; }
+        .c-1 { background: #27ae60; } .c-0 { background: #16a085; }
+
+        .head-image { width: 80%; max-width: 250px; border-radius: 15px; margin-bottom: 20px; border: 2px solid #333; }
+        .location-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+        .loc-btn { background: #1f2a48; color: #ccc; border: 1px solid #444; padding: 8px 15px; border-radius: 20px; cursor: pointer; transition: 0.2s; font-size: 0.9em; }
+        .loc-btn.selected { background: #bb86fc; color: black; border-color: #bb86fc; font-weight: bold; }
+
+        /* ADIM 3, 4, 5 (KATEGORİ KARTLARI) */
+        .category-box { background: #1f2a48; padding: 25px; border-radius: 15px; border: 1px solid #333; margin-bottom: 20px; }
+        .cat-title { color: #03dac6; border-bottom: 1px solid #444; padding-bottom: 10px; margin-bottom: 15px; font-weight: bold; display: flex; align-items: center; gap: 10px; }
+        
+        .item-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+        .select-btn {
+            background: #2c3e50; color: #ccc; border: 1px solid #444; padding: 10px 18px; 
+            border-radius: 8px; cursor: pointer; transition: 0.2s; font-size: 0.95em;
+        }
+        .select-btn:hover { background: #34495e; }
+        .select-btn.selected { background: #00b894; color: black; border-color: #00b894; font-weight: bold; box-shadow: 0 0 10px rgba(0, 184, 148, 0.3); }
+
+        /* NOT ALANI */
+        textarea {
+            width: 100%; height: 100px; background: #0f1526; border: 1px solid #444; 
+            color: white; padding: 15px; border-radius: 10px; resize: none; font-family: sans-serif;
+        }
+
+        /* ALT BUTONLAR */
+        .footer { padding: 20px; border-top: 1px solid #333; display: flex; justify-content: space-between; background: #0f1526; }
+        .btn { padding: 12px 25px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; font-size: 1em; }
+        .btn-next { background: #6c5ce7; color: white; margin-left: auto; }
+        .btn-next:hover { background: #5a4bcf; }
+        .btn-back { background: transparent; color: #888; border: 1px solid #444; }
+        .btn-back:hover { color: white; border-color: white; }
+
+        /* Mobil Uyum */
+        @media (max-width: 768px) {
+            #adim-2 { display: flex !important; flex-direction: column; }
+            .left-panel, .right-panel { width: 100%; border: none; }
+        }
+
+    </style>
+</head>
+<body>
+
+<form method="POST" class="container" id="atakForm">
+    
+    <input type="hidden" name="siddet" id="input-siddet" value="5">
+    <input type="hidden" name="konumlar" id="input-konumlar">
+    <input type="hidden" name="agri_tipleri" id="input-agri-tipleri"> <input type="hidden" name="semptomlar" id="input-semptomlar">
+    <input type="hidden" name="tetikleyiciler" id="input-tetikleyiciler">
+    <input type="hidden" name="ilaclar" id="input-ilaclar">
+    <input type="hidden" name="rahatlama" id="input-rahatlama">
+
+    <div class="wizard-header">
+        <div class="step-title" id="page-title">1. Tarih ve Saat</div>
+        <div class="step-count" id="step-count">Adım 1 / 5</div>
+    </div>
+
+    <div class="step-content" id="adim-1">
+        <div class="date-card">
+            <h2 style="color:#fff;">⏰ Ağrı Ne Zaman Başladı?</h2>
+            <label>Başlangıç Zamanı</label>
+            <input type="datetime-local" name="baslangic" id="baslangic" required>
+            <label>Bitiş Zamanı (Devam ediyorsa boş bırak)</label>
+            <input type="datetime-local" name="bitis" id="bitis">
+        </div>
+    </div>
+
+    <div class="step-content" id="adim-2">
+        <div class="left-panel">
+            <h3 style="color:#bb86fc;">Şiddet (0-10)</h3>
+            <div class="pain-list">
+                <div class="pain-item" onclick="selectPain(10, this)"><div class="pain-color c-10">10</div><div class="pain-desc">DAYANILMAZ</div></div>
+                <div class="pain-item" onclick="selectPain(9, this)"><div class="pain-color c-9">9</div><div class="pain-desc">ÇOK KÖTÜ</div></div>
+                <div class="pain-item" onclick="selectPain(8, this)"><div class="pain-color c-8">8</div><div class="pain-desc">ŞİDDETLİ</div></div>
+                <div class="pain-item" onclick="selectPain(7, this)"><div class="pain-color c-7">7</div><div class="pain-desc">CİDDİ</div></div>
+                <div class="pain-item" onclick="selectPain(6, this)"><div class="pain-color c-6">6</div><div class="pain-desc">RAHATSIZ EDİCİ</div></div>
+                <div class="pain-item selected" onclick="selectPain(5, this)"><div class="pain-color c-5">5</div><div class="pain-desc">ORTA</div></div>
+                <div class="pain-item" onclick="selectPain(4, this)"><div class="pain-color c-4">4</div><div class="pain-desc">HAFİF ORTA</div></div>
+                <div class="pain-item" onclick="selectPain(3, this)"><div class="pain-color c-3">3</div><div class="pain-desc">HAFİF</div></div>
+                <div class="pain-item" onclick="selectPain(2, this)"><div class="pain-color c-2">2</div><div class="pain-desc">ÇOK HAFİF</div></div>
+                <div class="pain-item" onclick="selectPain(1, this)"><div class="pain-color c-1">1</div><div class="pain-desc">HİSSEDİLİYOR</div></div>
+                <div class="pain-item" onclick="selectPain(0, this)"><div class="pain-color c-0">0</div><div class="pain-desc">AĞRI YOK</div></div>
+            </div>
+        </div>
+        <div class="right-panel">
+            <h3 style="color:#bb86fc;">Bölge Seçimi</h3>
+            <img src="{{ url_for('static', filename='kafa_haritasi.jpg') }}" class="head-image">
+            <div class="location-grid">
+                <div class="loc-btn" onclick="toggleLoc(this, 'Alin')">Alın</div>
+                <div class="loc-btn" onclick="toggleLoc(this, 'Sag_Sakak')">Sağ Şakak</div>
+                <div class="loc-btn" onclick="toggleLoc(this, 'Sol_Sakak')">Sol Şakak</div>
+                <div class="loc-btn" onclick="toggleLoc(this, 'Goz_Arkasi')">Göz Arkası</div>
+                <div class="loc-btn" onclick="toggleLoc(this, 'Tepesi')">Tepesi</div>
+                <div class="loc-btn" onclick="toggleLoc(this, 'Ense')">Ense</div>
+                <div class="loc-btn" onclick="toggleLoc(this, 'Butun_Bas')">Bütün Baş</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="step-content" id="adim-3">
+        <div class="category-box">
+            <div class="cat-title"><i class="fas fa-bolt"></i> Ağrı Karakteri / Tipi</div>
+            <div class="item-grid">
+                <div class="select-btn" onclick="toggleMulti(this, 'agri_tipi', 'Zonklayici')">Zonklayıcı</div>
+                <div class="select-btn" onclick="toggleMulti(this, 'agri_tipi', 'Cekicle_Vurulur_Gibi')">Çekiçle Vurulur Gibi</div>
+                <div class="select-btn" onclick="toggleMulti(this, 'agri_tipi', 'Sikistirici')">Sıkıştırıcı</div>
+                <div class="select-btn" onclick="toggleMulti(this, 'agri_tipi', 'Yururken_Artan')">Yürürken Artan</div>
+                <div class="select-btn" onclick="toggleMulti(this, 'agri_tipi', 'Saplanan')">Saplanan</div>
+                <div class="select-btn" onclick="toggleMulti(this, 'agri_tipi', 'Patlayici')">Patlayıcı</div>
+            </div>
+        </div>
+
+        <div class="category-box">
+            <div class="cat-title"><i class="fas fa-eye"></i> Duyusal Semptomlar</div>
+            <div class="item-grid">
+                <div class="select-btn" onclick="toggleMulti(this, 'semptom', 'Isik_Hassasiyeti')">Işık Hassasiyeti</div>
+                <div class="select-btn" onclick="toggleMulti(this, 'semptom', 'Ses_Hassasiyeti')">Ses Hassasiyeti</div>
+                <div class="select-btn" onclick="toggleMulti(this, 'semptom', 'Koku_Hassasiyeti')">Koku Hassasiyeti</div>
+            </div>
+        </div>
+        <div class="category-box">
+            <div class="cat-title"><i class="fas fa-heartbeat"></i> Fiziksel Semptomlar</div>
+            <div class="item-grid">
+                <div class="select-btn" onclick="toggleMulti(this, 'semptom', 'Mide_Bulantisi')">Mide Bulantısı</div>
+                <div class="select-btn" onclick="toggleMulti(this, 'semptom', 'Kusma')">Kusma</div>
+                <div class="select-btn" onclick="toggleMulti(this, 'semptom', 'Boyun_Agrisi')">Boyun Ağrısı</div>
+                <div class="select-btn" onclick="toggleMulti(this, 'semptom', 'Bas_Donmesi')">Baş Dönmesi</div>
+                <div class="select-btn" onclick="toggleMulti(this, 'semptom', 'Terleme')">Terleme</div>
+            </div>
+        </div>
+        <div class="category-box">
+            <div class="cat-title"><i class="fas fa-brain"></i> Psikolojik Semptomlar</div>
+            <div class="item-grid">
+                <div class="select-btn" onclick="toggleMulti(this, 'semptom', 'Kaygi_Anksiyete')">Kaygı / Anksiyete</div>
+                <div class="select-btn" onclick="toggleMulti(this, 'semptom', 'Depresif_Ruh_Hali')">Depresif Ruh Hali</div>
+                <div class="select-btn" onclick="toggleMulti(this, 'semptom', 'Sinirlilik')">Sinirlilik</div>
+                <div class="select-btn" onclick="toggleMulti(this, 'semptom', 'Odaklanma_Sorunu')">Odaklanma Sorunu</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="step-content" id="adim-4">
+        <div class="category-box">
+            <div class="cat-title"><i class="fas fa-bed"></i> Uyku</div>
+            <div class="item-grid">
+                <div class="select-btn" onclick="toggleMulti(this, 'tetik', 'Uykusuzluk')">Uykusuzluk</div>
+                <div class="select-btn" onclick="toggleMulti(this, 'tetik', 'Gec_Uyanma')">Geç Uyanma</div>
+                <div class="select-btn" onclick="toggleMulti(this, 'tetik', 'Bolunmus_Uyku')">Bölünmüş Uyku</div>
+                <div class="select-btn" onclick="toggleMulti(this, 'tetik', 'Cok_Uyuma')">Çok Uyuma</div>
+            </div>
+        </div>
+        <div class="category-box">
+            <div class="cat-title"><i class="fas fa-cloud-sun"></i> Hava Durumu</div>
+            <div class="item-grid">
+                <div class="select-btn" onclick="toggleMulti(this, 'tetik', 'Firtina_Lodos')">Fırtına / Lodos</div>
+                <div class="select-btn" onclick="toggleMulti(this, 'tetik', 'Yuksek_Nem')">Yüksek Nem</div>
+                <div class="select-btn" onclick="toggleMulti(this, 'tetik', 'Basinc_Degisimi')">Basınç Değişimi</div>
+                <div class="select-btn" onclick="toggleMulti(this, 'tetik', 'Parlak_Gunes')">Parlak Güneş</div>
+                <div class="select-btn" onclick="toggleMulti(this, 'tetik', 'Asiri_Sicak')">Aşırı Sıcak</div>
+            </div>
+        </div>
+        <div class="category-box">
+            <div class="cat-title"><i class="fas fa-utensils"></i> Beslenme</div>
+            <div class="item-grid">
+                <div class="select-btn" onclick="toggleMulti(this, 'tetik', 'Ogun_Atlama')">Öğün Atlama</div>
+                <div class="select-btn" onclick="toggleMulti(this, 'tetik', 'Kafein_Fazlaligi')">Kafein Fazlalığı</div>
+                <div class="select-btn" onclick="toggleMulti(this, 'tetik', 'Cikolata')">Çikolata</div>
+                <div class="select-btn" onclick="toggleMulti(this, 'tetik', 'Peynir')">Peynir</div>
+                <div class="select-btn" onclick="toggleMulti(this, 'tetik', 'Alkol')">Alkol</div>
+                <div class="select-btn" onclick="toggleMulti(this, 'tetik', 'Susuzluk')">Susuzluk</div>
+                <div class="select-btn" onclick="toggleMulti(this, 'tetik', 'Islenmis_Et')">İşlenmiş Et</div>
+                <div class="select-btn" onclick="toggleMulti(this, 'tetik', 'Tursu_Fermante')">Turşu / Fermante</div>
+            </div>
+        </div>
+        <div class="category-box">
+            <div class="cat-title"><i class="fas fa-theater-masks"></i> Duygu Durumu</div>
+            <div class="item-grid">
+                <div class="select-btn" onclick="toggleMulti(this, 'tetik', 'Yogun_Stres')">Yoğun Stres</div>
+                <div class="select-btn" onclick="toggleMulti(this, 'tetik', 'Uzuntu')">Üzüntü</div>
+                <div class="select-btn" onclick="toggleMulti(this, 'tetik', 'Heyecan')">Heyecan</div>
+                <div class="select-btn" onclick="toggleMulti(this, 'tetik', 'Panik')">Panik</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="step-content" id="adim-5">
+        <div class="category-box">
+            <div class="cat-title"><i class="fas fa-pills"></i> İlaçlar</div>
+            <div class="item-grid">
+                <div class="select-btn" onclick="toggleMulti(this, 'ilac', 'Parol')">Parol</div>
+                <div class="select-btn" onclick="toggleMulti(this, 'ilac', 'Vermidon')">Vermidon</div>
+                <div class="select-btn" onclick="toggleMulti(this, 'ilac', 'Majezik')">Majezik</div>
+                <div class="select-btn" onclick="toggleMulti(this, 'ilac', 'Arveles')">Arveles</div>
+                <div class="select-btn" onclick="toggleMulti(this, 'ilac', 'Apranax')">Apranax</div>
+                <div class="select-btn" onclick="toggleMulti(this, 'ilac', 'Relpax')">Relpax</div>
+                <div class="select-btn" onclick="toggleMulti(this, 'ilac', 'Avmigran')">Avmigran</div>
+                <div class="select-btn" onclick="toggleMulti(this, 'ilac', 'Zomig')">Zomig</div>
+            </div>
+        </div>
+
+        <div class="category-box">
+            <div class="cat-title"><i class="fas fa-spa"></i> Rahatlama Yöntemleri</div>
+            <div class="item-grid">
+                <div class="select-btn" onclick="toggleMulti(this, 'rahat', 'Karanlik_Oda')">Karanlık Oda</div>
+                <div class="select-btn" onclick="toggleMulti(this, 'rahat', 'Uyku')">Uyku</div>
+                <div class="select-btn" onclick="toggleMulti(this, 'rahat', 'Soguk_Kompres')">Soğuk Kompres</div>
+                <div class="select-btn" onclick="toggleMulti(this, 'rahat', 'Dus_Alma')">Duş Alma</div>
+                <div class="select-btn" onclick="toggleMulti(this, 'rahat', 'Masaj')">Masaj</div>
+                <div class="select-btn" onclick="toggleMulti(this, 'rahat', 'Kafein_Alimi')">Kafein Alımı</div>
+            </div>
+        </div>
+
+        <div class="category-box">
+            <div class="cat-title"><i class="fas fa-sticky-note"></i> Not Bırak</div>
+            <textarea name="notlar" placeholder="Eklemek istediğiniz özel bir durum var mı?"></textarea>
+        </div>
+    </div>
+
+    <div class="footer">
+        <button type="button" class="btn btn-back" id="btn-back" onclick="changeStep(-1)" style="display:none;">Geri</button>
+        <button type="button" class="btn btn-next" id="btn-next" onclick="changeStep(1)">Devam Et <i class="fas fa-arrow-right"></i></button>
+    </div>
+
+</form>
+
+<script>
+    // Başlangıç Ayarları
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    document.getElementById('baslangic').value = now.toISOString().slice(0,16);
+
+    let currentStep = 1;
+    const totalSteps = 5;
+
+    function changeStep(n) {
+        // Mevcut adımı gizle
+        const currentEl = document.getElementById(`adim-${currentStep}`);
+        if(currentEl) currentEl.style.display = 'none';
+        
+        currentStep += n;
+
+        // KAYDET (5. adımdan sonra basıldıysa)
+        if (currentStep > totalSteps) {
+            document.getElementById('atakForm').submit();
+            return;
+        }
+
+        // Yeni adımı göster
+        const nextStepEl = document.getElementById(`adim-${currentStep}`);
+        
+        // Ekran boyutuna göre display ayarı
+        if(window.innerWidth > 768 && currentStep === 2) {
+             nextStepEl.style.display = 'grid'; 
+        } else {
+             nextStepEl.style.display = 'flex'; // Genellikle flex kullanıyoruz
+             if(currentStep > 2) nextStepEl.style.display = 'block'; // Diğer adımlar blok
+        }
+        
+        // CSS display force düzeltme (Step 2 mobil grid sorunu için)
+        if(currentStep === 2 && window.innerWidth <= 768) {
+             nextStepEl.style.display = 'flex';
+             nextStepEl.style.flexDirection = 'column';
+        }
+
+        // Başlıkları Güncelle
+        const titles = ["1. Tarih ve Saat", "2. Ağrı ve Konum", "3. Semptomlar", "4. Tetikleyiciler", "5. İlaç ve Rahatlama"];
+        document.getElementById('page-title').innerText = titles[currentStep-1];
+        document.getElementById('step-count').innerText = `Adım ${currentStep} / ${totalSteps}`;
+
+        // Butonlar
+        document.getElementById('btn-back').style.display = currentStep === 1 ? 'none' : 'block';
+        
+        const nextBtn = document.getElementById('btn-next');
+        if (currentStep === totalSteps) {
+            nextBtn.innerHTML = 'KAYDET VE BİTİR <i class="fas fa-check"></i>';
+            nextBtn.style.background = '#00b894';
+            nextBtn.style.color = 'black';
+        } else {
+            nextBtn.innerHTML = 'Devam Et <i class="fas fa-arrow-right"></i>';
+            nextBtn.style.background = '#6c5ce7';
+            nextBtn.style.color = 'white';
+        }
+    }
+
+    // AĞRI SEÇİMİ
+    function selectPain(val, el) {
+        document.getElementById('input-siddet').value = val;
+        document.querySelectorAll('.pain-item').forEach(i => i.classList.remove('selected'));
+        el.classList.add('selected');
+    }
+
+    // KONUM SEÇİMİ
+    let selectedLocs = [];
+    function toggleLoc(el, name) {
+        el.classList.toggle('selected');
+        if (selectedLocs.includes(name)) selectedLocs = selectedLocs.filter(l => l !== name);
+        else selectedLocs.push(name);
+        document.getElementById('input-konumlar').value = selectedLocs.join(', ');
+    }
+
+    // GENEL ÇOKLU SEÇİM (Semptom, Tetik, İlaç, Rahat, AĞRI TİPİ)
+    let selections = {
+        'semptom': [], 'tetik': [], 'ilac': [], 'rahat': [], 'agri_tipi': [] // agri_tipi eklendi
+    };
+
+    function toggleMulti(el, type, value) {
+        el.classList.toggle('selected');
+        let list = selections[type];
+        
+        if (list.includes(value)) {
+            list = list.filter(item => item !== value);
+        } else {
+            list.push(value);
+        }
+        selections[type] = list;
+
+        // İlgili gizli inputa yaz
+        let inputId = "";
+        if(type === 'semptom') inputId = 'input-semptomlar';
+        if(type === 'tetik') inputId = 'input-tetikleyiciler';
+        if(type === 'ilac') inputId = 'input-ilaclar';
+        if(type === 'rahat') inputId = 'input-rahatlama';
+        if(type === 'agri_tipi') inputId = 'input-agri-tipleri'; // Eşleşme sağlandı
+        
+        if(inputId) document.getElementById(inputId).value = list.join(', ');
+    }
+</script>
+
+</body>
+</html>
